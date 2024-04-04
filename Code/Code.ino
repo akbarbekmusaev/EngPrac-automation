@@ -7,6 +7,7 @@ const int motorSwitcherPin =  4;
 const int mechanismOpenedSensorPin =  2;
 const int mechanismClosedSensorPin =  3;
 const int motorSpeedSensorPin =  8;
+const int tipoverSensorPin =  9; 
 
 
 void setup() {
@@ -17,6 +18,8 @@ void setup() {
   pinMode(motorSwitcherPin, OUTPUT);
   pinMode(mechanismOpenedSensorPin, INPUT);
   pinMode(mechanismClosedSensorPin, INPUT);
+  pinMode(motorSpeedSensorPin, INPUT);
+  pinMode(tipoverSensorPin, INPUT);
 }
 
 int closingButtonState = digitalRead(closingButtonPin);
@@ -25,34 +28,31 @@ int emergencyButtonState = digitalRead(emergencyButtonPin);
 int mechanismOpenedSensorState = digitalRead(mechanismOpenedSensorPin);
 int mechanismClosedSensorState = digitalRead(mechanismClosedSensorPin);
 int motorSpeed = analogRead(motorSpeedSensorPin);
-const int motorSpeedThreshold = 500;
+const int motorSpeedThresholdOpening = 500;
+const int motorSpeedThresholdClosing = 500;
 
 void loop() {
-  if (mechanismClosedSensorState == HIGH && openingButtonPin == HIGH) {
+  if (emergencyButtonState == LOW) {
+    if (openingButtonPin == HIGH) {
     while (mechanismOpenedSensorState != HIGH) {
       digitalWrite(motorDirectionPin, HIGH);
       digitalWrite(motorSwitcherPin, HIGH);
-      if (motorSpeed < motorSpeedThreshold) {
-        while (mechanismClosedSensorPin != HIGH) {
-          digitalWrite(motorDirectionPin, LOW);
-          digitalWrite(motorSwitcherPin, HIGH);
-        }
+      if (motorSpeed < motorSpeedThresholdOpening) {
+        digitalWrite(motorSwitcherPin, LOW);
         break;
       }
     }
-  } else if (mechanismOpenedSensorState == HIGH && closingButtonState == HIGH) {
-    while (mechanismClosedSensorState != LOW) {
+    } else if ( closingButtonState == HIGH) {
+    while (mechanismClosedSensorState != HIGH) {
       digitalWrite(motorDirectionPin, LOW);
       digitalWrite(motorSwitcherPin, HIGH);
-      if (motorSpeed < motorSpeedThreshold) {
-        while (mechanismOpenedSensorPin != HIGH) {
-          digitalWrite(motorDirectionPin, HIGH);
-          digitalWrite(motorSwitcherPin, HIGH);
-        }
+      if (motorSpeed < motorSpeedThresholdClosing) {
+        digitalWrite(motorSwitcherPin, LOW);
         break;
       }
     }
-  } else if (emergencyButtonState == HIGH) {
+  }} else if (emergencyButtonState == HIGH) {
       digitalWrite(motorSwitcherPin, LOW);
   }
+}
 }
