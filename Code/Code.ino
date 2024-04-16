@@ -1,4 +1,3 @@
-
 const int closingButtonPin =  5;
 const int openingButtonPin =  6; 
 const int emergencyButtonPin =  7; 
@@ -22,31 +21,47 @@ void setup() {
 }
 
 unsigned long time1 = 0;
-float motorRPM = 200;
-int LastState = LOW;
+float motorRPM = 200.0;
+bool LastMotorSensorState = LOW;
 const int motorRPMThreshold = 200;
+int state = 0;
 
 void loop() {
-  if (digitalRead(motorRPMSensorPin) == HIGH && LastState == LOW) {
+  if (digitalRead(emergencyButtonPin) == HIGH || digitalRead(tipoverSensorPin) == LOW) {
+    digitalWrite(motorSwitcherPin, LOW);
+    state = 0;
+    return;
+  }
+
+  if (digitalRead(motorRPMSensorPin) == HIGH && LastMotorSensorState == LOW) {
     if (time1 > 0) {
       motorRPM = (1.0 / ((millis() - time1) / 1000.0)) * 60.0;
     }
     time1 = millis();
   }
-  LastState = digitalRead(motorRPMSensorPin);
+  LastMotorSensorState = digitalRead(motorRPMSensorPin);
 
-  if (digitalRead(openingButtonPin) == HIGH) {
+  if (digitalRead(openingButtonPin) == HIGH && state == 0) {
+    state = 1;
+  } else if (digitalRead(closingButtonPin) == HIGH && state == 0) {
+    state = -1;
+  }
+
+  if (state == 1) {
     if (digitalRead(mechanismOpenedSensorPin) != HIGH) {
-        digitalWrite(motorDirectionPin, HIGH);
-        digitalWrite(motorSwitcherPin, HIGH);
+      digitalWrite(motorDirectionPin, HIGH);
+      digitalWrite(motorSwitcherPin, HIGH);
+    } else {
+      digitalWrite(motorSwitcherPin, LOW);
+      state = 0;
     }
-  } else if (digitalRead(closingButtonPin) == HIGH) {
+  } else if (state == -1) {
     if (digitalRead(mechanismClosedSensorPin) != HIGH) {
       digitalWrite(motorDirectionPin, LOW);
       digitalWrite(motorSwitcherPin, HIGH);
-    }
-  }
-  if (digitalRead(emergencyButtonPin) == HIGH  || motorRPM < motorRPMThreshold || digitalRead(tipoverSensorPin) == LOW){
+    } else {
       digitalWrite(motorSwitcherPin, LOW);
+      state = 0;
+    }
   }
 }
